@@ -1,5 +1,6 @@
 package net.javaguides.sms_backend.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import net.javaguides.sms_backend.dto.StudentDto;
 import net.javaguides.sms_backend.service.StudentService;
@@ -18,7 +19,7 @@ public class StudentController {
 
     // build add student rest api
     @PostMapping
-    public ResponseEntity<StudentDto> createStudent(@RequestBody StudentDto studentDto){
+    public ResponseEntity<StudentDto> createStudent(@Valid @RequestBody StudentDto studentDto){
         StudentDto savedStudent = studentService.createStudent(studentDto);
         return new ResponseEntity<>(savedStudent, HttpStatus.CREATED);
     }
@@ -40,7 +41,7 @@ public class StudentController {
     // build update student rest api
     @PutMapping("{id}")
     public ResponseEntity<StudentDto> updatedStudent(@PathVariable("id") Long studentId,
-                                                     @RequestBody StudentDto updatedStudent){
+                                                     @Valid @RequestBody StudentDto updatedStudent){
         StudentDto studentDto = studentService.updateStudent(studentId, updatedStudent);
         return ResponseEntity.ok(studentDto);
     }
