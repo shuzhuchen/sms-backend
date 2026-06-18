@@ -12,6 +12,8 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @AllArgsConstructor
 public class StudentServiceImpl implements StudentService {
@@ -33,6 +35,21 @@ public class StudentServiceImpl implements StudentService {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Student does not exist with given id: " + id));
         return StudentMapper.mapToStudentDto(student);
+    }
+
+    @Override
+    @Cacheable(value = "students", key = "'all'")
+    public List<StudentDto> getAll() {
+        return studentRepository.findAll()
+                .stream()
+                .map(StudentMapper::mapToStudentDto)
+                .toList();
+    }
+
+    @Override
+    @Cacheable(value = "students", key = "'count'")
+    public long count() {
+        return studentRepository.count();
     }
 
     @Override
