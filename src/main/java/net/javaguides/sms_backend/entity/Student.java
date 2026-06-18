@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
-import java.util.Date;
 
 @Getter
 @Setter
@@ -37,4 +36,3 @@ public class Student {
     @Column(name = "enrollment_date")
     private LocalDate enrollmentDate;
 }
-

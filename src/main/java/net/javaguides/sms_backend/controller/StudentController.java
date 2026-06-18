@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/students")
 @AllArgsConstructor
@@ -31,6 +33,16 @@ public class StudentController {
     @GetMapping("/{id}")
     public ResponseEntity<StudentDto> getById(@PathVariable Long id){
         return ResponseEntity.ok(studentService.getById(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<StudentDto>> getAll(){
+        return ResponseEntity.ok(studentService.getAll());
+    }
+
+    @GetMapping("/count")
+    public ResponseEntity<Long> count(){
+        return ResponseEntity.ok(studentService.count());
     }
 
     @PutMapping("/{id}")
