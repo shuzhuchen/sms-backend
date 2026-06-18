@@ -20,11 +20,6 @@ import java.util.Optional;
 @RequiredArgsConstructor // generates constructor for JdbcTemplate
 public class StudentRepository {
 
-//    private static final String SELECT_COLUMNS = """
-//        SELECT id, first_name, last_name, email_id, major, enrollment_date
-//        FROM students
-//        """;
-
     private final JdbcTemplate jdbcTemplate;
 
     private static final RowMapper<Student> ROW_MAPPER = (rs, rowNum) -> new Student(
