@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -30,8 +32,13 @@ public class Student {
     @Column(name = "email_id", nullable = false,unique = true)
     private String email;
 
-    @Column(name = "major")
-    private String major;
+    @ManyToMany
+    @JoinTable(
+            name = "student_majors",
+            joinColumns = @JoinColumn(name = "student_id"),
+            inverseJoinColumns = @JoinColumn(name = "major_id")
+    )
+    private Set<Major> majors = new HashSet<>();
 
     @Column(name = "enrollment_date")
     private LocalDate enrollmentDate;

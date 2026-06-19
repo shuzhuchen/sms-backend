@@ -62,7 +62,7 @@ public class StudentServiceImpl implements StudentService {
         student.setFirstName(dto.getFirstName());
         student.setLastName(dto.getLastName());
         student.setEmail(dto.getEmail());
-        student.setMajor(dto.getMajor());
+        student.setMajors(dto.getMajors());
         student.setEnrollmentDate(dto.getEnrollmentDate());
 
         Student updated = studentRepository.save(student);

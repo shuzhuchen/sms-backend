@@ -9,8 +9,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import net.javaguides.sms_backend.entity.Major;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -31,9 +34,7 @@ public class StudentDto {
     @Email(message = "Email must be valid")
     private String email;
 
-    @NotBlank(message = "Major is required")
-    @Size(max = 100, message = "Major must be 100 characters or fewer")
-    private String major;
+    private Set<Major> majors = new HashSet<>();
 
     @NotNull(message = "Enrollment date is required")
     @PastOrPresent(message = "Enrollment date cannot be in the future")
