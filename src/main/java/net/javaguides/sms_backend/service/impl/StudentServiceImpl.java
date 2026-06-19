@@ -7,10 +7,12 @@ import net.javaguides.sms_backend.exception.ResourceNotFoundException;
 import net.javaguides.sms_backend.mapper.StudentMapper;
 import net.javaguides.sms_backend.repository.StudentRepository;
 import net.javaguides.sms_backend.service.StudentService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -19,51 +21,62 @@ public class StudentServiceImpl implements StudentService {
     private StudentRepository studentRepository;
 
     @Override
-    public StudentDto createStudent(StudentDto studentDto) {
+    @CacheEvict(value = "students", allEntries = true)
+    public StudentDto create(StudentDto dto) {
 
-        Student student = StudentMapper.mapToStudent(studentDto);
-        Student savedStudent = studentRepository.save(student);
-        return StudentMapper.mapToStudentDto(savedStudent);
+        Student student = StudentMapper.mapToStudent(dto);
+        Student saved = studentRepository.save(student);
+        return StudentMapper.mapToStudentDto(saved);
     }
 
     @Override
-    public StudentDto getStudentById(Long studentId) {
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Student does not exist with given id: " + studentId));
+    @Cacheable(value = "students", key = "#id")
+    public StudentDto getById(Long id) {
+        Student student = studentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Student does not exist with given id: " + id));
         return StudentMapper.mapToStudentDto(student);
     }
 
     @Override
-    public List<StudentDto> getAllStudents() {
-        List<Student> students = studentRepository.findAll();
-        return students.stream().map((student) -> StudentMapper.mapToStudentDto(student))
-                .collect(Collectors.toList());
-
+    @Cacheable(value = "students", key = "'all'")
+    public List<StudentDto> getAll() {
+        return studentRepository.findAll()
+                .stream()
+                .map(StudentMapper::mapToStudentDto)
+                .toList();
     }
 
     @Override
-    public StudentDto updateStudent(Long studentId, StudentDto updatedStudent) {
-
-        Student student = studentRepository.findById(studentId).orElseThrow(
-                () -> new ResourceNotFoundException("Student does not exist with given id: " + studentId)
-        );
-        student.setFirstName(updatedStudent.getFirstName());
-        student.setLastName(updatedStudent.getLastName());
-        student.setEmail(updatedStudent.getEmail());
-        student.setMajor(updatedStudent.getMajor());
-        student.setEnrollmentDate(updatedStudent.getEnrollmentDate());
-
-        Student updatedStudentObj = studentRepository.save(student);
-
-        return StudentMapper.mapToStudentDto(updatedStudentObj);
+    @Cacheable(value = "students", key = "'count'")
+    public long count() {
+        return studentRepository.count();
     }
 
     @Override
-    public void deleteStudent(Long studentId) {
-        studentRepository.findById(studentId).orElseThrow(
-                () -> new ResourceNotFoundException("Student does not exist with given id: " + studentId)
+    @CachePut(value = "students", key = "#id")
+    public StudentDto update(Long id, StudentDto dto) {
+
+        Student student = studentRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Student does not exist with given id: " + id)
+        );
+        student.setFirstName(dto.getFirstName());
+        student.setLastName(dto.getLastName());
+        student.setEmail(dto.getEmail());
+        student.setMajor(dto.getMajor());
+        student.setEnrollmentDate(dto.getEnrollmentDate());
+
+        Student updated = studentRepository.save(student);
+
+        return StudentMapper.mapToStudentDto(updated);
+    }
+
+    @Override
+    @CacheEvict(value = "students", allEntries = true)
+    public void delete(Long id) {
+        studentRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Student does not exist with given id: " + id)
         );
 
-        studentRepository.deleteById(studentId);
+        studentRepository.deleteById(id);
     }
 }
