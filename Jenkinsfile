@@ -1,12 +1,14 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'EC2_HOST', defaultValue: '34.229.77.238', description: 'EC2 public IP')
+    }
+
     environment {
         DEPLOY_BRANCH = 'dev'
         IMAGE_NAME = 'szchen/sms-backend'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        EC2_HOST = credentials('sms-backend-ec2-host')
-        DB_PASSWORD = credentials('sms-backend-db-password')
     }
 
     triggers {
@@ -55,32 +57,47 @@ pipeline {
                 expression { env.BRANCH_NAME == env.DEPLOY_BRANCH }
             }
             steps {
-                sshagent(credentials: ['sms-backend-ec2-ssh-key']) {
+                sshagent(credentials: ['ec2-ssh-key']) {
                     sh '''
-                        ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "
-                          docker pull $IMAGE_NAME:latest &&
+                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_HOST} "
                           docker stop sms-backend || true &&
                           docker rm sms-backend || true &&
+                          docker pull ${IMAGE_NAME}:latest &&
                           docker run -d \
                             --name sms-backend \
                             --network host \
                             -e SERVER_PORT=8080 \
                             -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/postgresql-sms \
                             -e SPRING_DATASOURCE_USERNAME=sms_user \
-                            -e SPRING_DATASOURCE_PASSWORD='$DB_PASSWORD' \
-                            -e DOWNSTREAM_URL=http://18.236.231.101:8080/name/aggregation \
+                            -e SPRING_DATASOURCE_PASSWORD=1234 \
+                            -e DOWNSTREAM_URL=http://18.237.192.113:8080/name/aggregation \
                             -e AGGREGATION_SERVICE_NAME=Suzy \
-                            $IMAGE_NAME:latest
+                            ${IMAGE_NAME}:latest
                         "
                     '''
                 }
+            }
+        }
+
+        stage('Docker Logout') {
+            when {
+                expression { env.BRANCH_NAME == env.DEPLOY_BRANCH }
+            }
+            steps {
+                sh 'docker logout || true'
             }
         }
     }
 
     post {
         always {
-            sh 'docker logout || true'
+            echo 'Pipeline finished.'
+        }
+        success {
+            echo 'Build and deploy succeeded.'
+        }
+        failure {
+            echo 'Build or deploy failed.'
         }
     }
 }
