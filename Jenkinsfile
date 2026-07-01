@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    parameters {
-        string(name: 'EC2_HOST', defaultValue: '34.229.77.238', description: 'EC2 public IP')
-    }
-
     environment {
         DEPLOY_BRANCH = 'dev'
         IMAGE_NAME = 'szchen/sms-backend'
@@ -19,6 +15,30 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Load .env') {
+            steps {
+                script {
+                    if (!fileExists('.env')) {
+                        error('.env file not found at repo root')
+                    }
+                    def envFile = readFile('.env').trim()
+                    envFile.split('\n').each { line ->
+                        line = line.trim()
+                        if (line && !line.startsWith('#') && line.contains('=')) {
+                            def idx = line.indexOf('=')
+                            def key = line.substring(0, idx).trim()
+                            def value = line.substring(idx + 1).trim()
+                            env[key] = value
+                        }
+                    }
+                    if (!env.EC2_HOST) {
+                        error('EC2_HOST not set in .env')
+                    }
+                    echo "Loaded EC2_HOST=${env.EC2_HOST}"
+                }
             }
         }
 
