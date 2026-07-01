@@ -11,18 +11,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class NameAggregationServiceImplTest {
 
     @Test
-    void downstreamSuccessReturnsLocalResponseWhenDownstreamAcceptsRequest() {
-        TestNameAggregationService service = new TestNameAggregationService(false, "");
+    void downstreamSuccessReturnsInputNamesThenDownstreamReturnedNames() {
+        TestNameAggregationService service = new TestNameAggregationService(new NameAggregationRequest(List.of("Alice", "Bob")), "");
 
         NameAggregationRequest response = service.forwardToNext(List.of("Suzy"));
 
-        assertEquals(List.of("Suzy"), response.getName());
+        assertEquals(List.of("Suzy", "Alice", "Bob"), response.getName());
         assertEquals(null, response.getFallbackReason());
     }
 
     @Test
     void fallbackReturnsLocalResponseWhenDownstreamFails() {
-        TestNameAggregationService service = new TestNameAggregationService(true, "");
+        TestNameAggregationService service = new TestNameAggregationService(null, "");
 
         NameAggregationRequest response = service.downgrade(List.of("Suzy"), new RuntimeException("Read timed out"));
 
@@ -32,26 +32,28 @@ class NameAggregationServiceImplTest {
 
     @Test
     void configuredServiceNameIsAppendedWithoutHardcodingName() {
-        TestNameAggregationService service = new TestNameAggregationService(false, "Backend");
+        TestNameAggregationService service = new TestNameAggregationService(new NameAggregationRequest(List.of("Alice")), "Backend");
 
         NameAggregationRequest response = service.forwardToNext(List.of("Jude"));
 
-        assertEquals(List.of("Jude", "Backend"), response.getName());
+        assertEquals(List.of("Jude", "Backend", "Alice"), response.getName());
     }
 
     private static class TestNameAggregationService extends NameAggregationServiceImpl {
-        private final boolean fail;
+        private final NameAggregationRequest downstreamResponse;
 
-        private TestNameAggregationService(boolean fail, String serviceName) {
+        private TestNameAggregationService(NameAggregationRequest downstreamResponse, String serviceName) {
             super("http://localhost:8081/name/aggregation", Duration.ofMillis(100), serviceName);
-            this.fail = fail;
+            this.downstreamResponse = downstreamResponse;
         }
 
         @Override
-        protected void sendDownstream(NameAggregationRequest request) {
-            if (fail) {
+        protected NameAggregationRequest sendDownstream(NameAggregationRequest request) {
+            if (downstreamResponse == null) {
                 throw new RuntimeException("Read timed out");
             }
+
+            return downstreamResponse;
         }
     }
 }

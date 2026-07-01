@@ -39,25 +39,39 @@ public class NameAggregationServiceImpl implements NameAggregationService {
     @CircuitBreaker(name = "nameAggregationDownstream", fallbackMethod = "downgrade")
     public NameAggregationRequest forwardToNext(List<String> names) {
         NameAggregationRequest request = new NameAggregationRequest(buildLocalNames(names));
+        NameAggregationRequest downstreamResponse = sendDownstream(request);
 
-        sendDownstream(request);
-
-        return request;
+        return new NameAggregationRequest(appendDownstreamNames(request.getName(), downstreamResponse));
     }
 
-    protected void sendDownstream(NameAggregationRequest request) {
-        restClient.post()
+    protected NameAggregationRequest sendDownstream(NameAggregationRequest request) {
+        return restClient.post()
                 .uri(downstreamUrl)
                 .body(request)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (httpRequest, httpResponse) -> {
                     throw new NameAggregationException("Downstream returned " + httpResponse.getStatusCode());
                 })
-                .toBodilessEntity();
+                .body(NameAggregationRequest.class);
     }
 
     public NameAggregationRequest downgrade(List<String> names, Throwable failure) {
         return new NameAggregationRequest(buildLocalNames(names), "fallback-downstream unavailable");
+    }
+
+    private List<String> appendDownstreamNames(List<String> localNames, NameAggregationRequest downstreamResponse) {
+        List<String> mergedNames = localNames == null ? new ArrayList<>() : new ArrayList<>(localNames);
+        List<String> downstreamNames = downstreamResponse == null || downstreamResponse.getName() == null
+                ? new ArrayList<>()
+                : downstreamResponse.getName();
+
+        for (String downstreamName : downstreamNames) {
+            if (!mergedNames.contains(downstreamName)) {
+                mergedNames.add(downstreamName);
+            }
+        }
+
+        return mergedNames;
     }
 
     private List<String> buildLocalNames(List<String> names) {
