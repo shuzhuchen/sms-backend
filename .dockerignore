@@ -1,0 +1,9 @@
+target/
+.git/
+.idea/
+.junie/
+*.iml
+README.md
+.env
+.env.*
+*.pem
