@@ -3,6 +3,11 @@ pipeline {
 
     parameters {
         string(name: 'EC2_HOST', defaultValue: '', description: 'EC2 public IP')
+        booleanParam(
+                name: 'SONAR_ENABLE',
+                defaultValue: true,
+                description: 'Run SonarQube analysis and quality gate during the CI/CD pipeline'
+        )
     }
 
     environment {
@@ -22,15 +27,45 @@ pipeline {
             }
         }
 
-        stage('Build Jar') {
+        stage('Test & Coverage') {
             steps {
-                sh './mvnw clean package -DskipTests'
+                sh './mvnw clean verify -B'
+            }
+            post {
+                always {
+                // publish JUnit test results
+                    junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
+                    archiveArtifacts allowEmptyArchive: true, artifacts: 'target/site/jacoco/**'
+                }
             }
         }
 
-        stage('Unit Tests') {
+        // SonarQube Analysis
+        stage('SonarQube Analysis') {
+            when {
+                expression { return params.SONAR_ENABLE }
+            }
             steps {
-                sh './mvnw -Dtest=NameAggregationServiceImplTest test'
+                withSonarQubeEnv('sonarqube') {
+                    sh './mvnw sonar:sonar -B -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            when {
+                expression { return params.SONAR_ENABLE }
+            }
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                sh './mvnw package -DskipTests -B'
             }
         }
 
