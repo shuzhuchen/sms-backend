@@ -1,0 +1,29 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092,localhost:9094,localhost:9096
+    producer:
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    listener:
+      ack-mode: manual_immediate
+      concurrency: 3
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      nameAggregationDownstream:
+        failure-rate-threshold: ${AGGREGATION_CIRCUIT_FAILURE_RATE_THRESHOLD:50}
+        sliding-window-size: ${AGGREGATION_CIRCUIT_SLIDING_WINDOW_SIZE:10}
+        minimum-number-of-calls: ${AGGREGATION_CIRCUIT_MINIMUM_CALLS:5}
+        wait-duration-in-open-state: ${AGGREGATION_CIRCUIT_OPEN_WAIT_DURATION:30s}
+        permitted-number-of-calls-in-half-open-state: ${AGGREGATION_CIRCUIT_HALF_OPEN_CALLS:2}
+  retry:
+    instances:
+      nameAggregationDownstream:
+        max-attempts: ${AGGREGATION_RETRY_MAX_ATTEMPTS:3}
+        wait-duration: ${AGGREGATION_RETRY_WAIT_DURATION:500ms}
