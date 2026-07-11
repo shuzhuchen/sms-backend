@@ -5,6 +5,7 @@ import net.javaguides.sms_backend.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -39,6 +40,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NameAggregationException.class)
     public ResponseEntity<ErrorResponse> handleNameAggregation(NameAggregationException ex, HttpServletRequest request) {
         return error(HttpStatus.BAD_GATEWAY, "Name aggregation downstream failed", request, List.of());
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+        return error(HttpStatus.UNAUTHORIZED, ex.getMessage(), request, List.of());
     }
 
     @ExceptionHandler(Exception.class)

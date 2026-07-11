@@ -2,12 +2,16 @@ package net.javaguides.sms_backend.controller;
 
 import net.javaguides.sms_backend.dto.NameAggregationRequest;
 import net.javaguides.sms_backend.exception.NameAggregationException;
+import net.javaguides.sms_backend.security.CustomOAuth2UserService;
+import net.javaguides.sms_backend.security.JwtService;
 import net.javaguides.sms_backend.service.NameAggregationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.security.oauth2.client.autoconfigure.servlet.OAuth2ClientWebSecurityAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -22,7 +26,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(NameAggregationController.class)
+@WebMvcTest(value = NameAggregationController.class, excludeAutoConfiguration = OAuth2ClientWebSecurityAutoConfiguration.class)
+@WithMockUser
 class NameAggregationControllerTest {
 
     @Autowired
@@ -33,6 +38,12 @@ class NameAggregationControllerTest {
 
     @MockitoBean
     private CacheManager cacheManager;
+
+    @MockitoBean
+    private CustomOAuth2UserService customOAuth2UserService;
+
+    @MockitoBean
+    private JwtService jwtService;
 
     @Test
     void aggregateReturnsServiceResultForValidRequest() throws Exception {

@@ -105,6 +105,12 @@ pipeline {
                             -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/postgresql-sms \
                             -e SPRING_DATASOURCE_USERNAME=sms_user \
                             -e SPRING_DATASOURCE_PASSWORD=1234 \
+                            -e DB_URL=jdbc:postgresql://localhost:5432/postgresql-sms \
+                            -e DB_USERNAME=sms_user \
+                            -e DB_PASSWORD=1234 \
+                            -e SPRING_JPA_HIBERNATE_DDL_AUTO=update \
+                            -e GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} \
+                            -e GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET} \
                             -e DOWNSTREAM_URL=http://18.237.192.113:8080/name/aggregation \
                             -e AGGREGATION_SERVICE_NAME=Suzy \
                             ${IMAGE_NAME}:latest

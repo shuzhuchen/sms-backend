@@ -1,13 +1,18 @@
 package net.javaguides.sms_backend.controller;
 
+import net.javaguides.sms_backend.dto.PagedResponse;
 import net.javaguides.sms_backend.dto.StudentDto;
 import net.javaguides.sms_backend.exception.ResourceNotFoundException;
+import net.javaguides.sms_backend.security.CustomOAuth2UserService;
+import net.javaguides.sms_backend.security.JwtService;
 import net.javaguides.sms_backend.service.StudentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.security.oauth2.client.autoconfigure.servlet.OAuth2ClientWebSecurityAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -27,7 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(StudentController.class)
+@WebMvcTest(value = StudentController.class, excludeAutoConfiguration = OAuth2ClientWebSecurityAutoConfiguration.class)
+@WithMockUser(roles = "ADMIN")
 class StudentControllerTest {
 
     @Autowired
@@ -39,6 +45,12 @@ class StudentControllerTest {
     @MockitoBean
     private CacheManager cacheManager;
 
+    @MockitoBean
+    private CustomOAuth2UserService customOAuth2UserService;
+
+    @MockitoBean
+    private JwtService jwtService;
+
     @Test
     void createReturnsCreatedStudent() throws Exception {
         StudentDto request = student(null, "Ada", "Lovelace", "ada@example.com");
@@ -48,13 +60,13 @@ class StudentControllerTest {
         mockMvc.perform(post("/api/v1/students")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {
-                                  "firstName": "Ada",
-                                  "lastName": "Lovelace",
-                                  "email": "ada@example.com",
-                                  "majors": [],
-                                  "enrollmentDate": "2025-01-01"
-                                }
+                {
+                  "firstName": "Ada",
+                  "lastName": "Lovelace",
+                  "email": "ada@example.com",
+                  "majors": [],
+                  "enrollmentDate": "2025-01-01"
+                }
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
@@ -65,8 +77,6 @@ class StudentControllerTest {
 
     @Test
     void createRejectsInvalidStudent() throws Exception {
-        StudentDto invalid = student(null, "", "Lovelace", "not-an-email");
-
         mockMvc.perform(post("/api/v1/students")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -122,6 +132,30 @@ class StudentControllerTest {
     }
 
     @Test
+    void searchReturnsPagedStudents() throws Exception {
+        when(studentService.searchStudents(any(String.class), any())).thenReturn(new PagedResponse<>(
+                List.of(student(1L, "Ada", "Lovelace", "ada@example.com")),
+                0,
+                5,
+                1,
+                1,
+                true
+        ));
+
+        mockMvc.perform(get("/api/v1/students/search")
+                        .param("query", "computer")
+                        .param("page", "0")
+                        .param("size", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].majors[0].majorName").value("Computer Science"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.last").value(true));
+
+        verify(studentService).searchStudents(any(String.class), any());
+    }
+
+    @Test
     void countReturnsStudentCount() throws Exception {
         when(studentService.count()).thenReturn(2L);
 
@@ -141,13 +175,13 @@ class StudentControllerTest {
         mockMvc.perform(put("/api/v1/students/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {
-                                  "firstName": "Ada",
-                                  "lastName": "Byron",
-                                  "email": "ada@example.com",
-                                  "majors": [],
-                                  "enrollmentDate": "2025-01-01"
-                                }
+                {
+                  "firstName": "Ada",
+                  "lastName": "Byron",
+                  "email": "ada@example.com",
+                  "majors": [],
+                  "enrollmentDate": "2025-01-01"
+                }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.lastName").value("Byron"));
@@ -162,13 +196,13 @@ class StudentControllerTest {
         mockMvc.perform(put("/api/v1/students/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {
-                                  "firstName": "Ada",
-                                  "lastName": "",
-                                  "email": "ada@example.com",
-                                  "majors": [],
-                                  "enrollmentDate": "2025-01-01"
-                                }
+                {
+                  "firstName": "Ada",
+                  "lastName": "",
+                  "email": "ada@example.com",
+                  "majors": [],
+                  "enrollmentDate": "2025-01-01"
+                }
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid request body"));
@@ -186,6 +220,6 @@ class StudentControllerTest {
     }
 
     private static StudentDto student(Long id, String firstName, String lastName, String email) {
-        return new StudentDto(id, firstName, lastName, email, null, LocalDate.of(2025, 1, 1));
+        return new StudentDto(id, firstName, lastName, email, java.util.Set.of(new net.javaguides.sms_backend.entity.Major(10L, "Computer Science", java.util.Set.of())), LocalDate.of(2025, 1, 1));
     }
 }

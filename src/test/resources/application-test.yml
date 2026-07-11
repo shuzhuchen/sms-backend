@@ -1,4 +1,10 @@
 spring:
+  kafka:
+    bootstrap-servers: localhost:9092,localhost:9094,localhost:9096
+    admin:
+      auto-create: false
+    listener:
+      auto-startup: false
   datasource:
     url: jdbc:h2:mem:sms_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
@@ -10,6 +16,25 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - openid
+              - profile
+              - email
+
+app:
+  jwt:
+    secret: test-jwt-secret-with-enough-length
+    expiration-seconds: 3600
+  demo-user:
+    username: admin
+    password: admin123
 
 downstream:
   url: http://localhost:8081/name/aggregation

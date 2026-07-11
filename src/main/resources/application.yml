@@ -1,3 +1,18 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092,localhost:9094,localhost:9096
+    producer:
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    listener:
+      ack-mode: manual_immediate
+      concurrency: 3
+
 resilience4j:
   circuitbreaker:
     instances:
